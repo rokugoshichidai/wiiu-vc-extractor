@@ -1,0 +1,33 @@
+name: Build WiiU VC Extractor (Windows)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag, or commit to build (e.g. main or v0.6.0 or f9e16ae)'
+        required: true
+        default: 'master'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout specified ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref }}
+
+      - name: Restore NuGet packages
+        run: nuget restore WiiuVcExtractor.sln
+
+      - name: Build solution (Release)
+        run: msbuild WiiuVcExtractor.sln /p:Configuration=Release /m
+
+      - name: Collect built exe(s)
+        run: dir /s /b | findstr /i /r "\\bin\\.*\\Release\\.*\.exe" || echo "no exe found"
+
+      - name: Upload exe artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wiiuvcextractor-release
+          path: '**/bin/**/Release/*.exe'
